@@ -5,21 +5,23 @@ import "./index.css";
 import Restaurant from "./Restaurant";
 
 function App() {
-  let gotLocation = "inactive"
   const [formState, setFormState] = useState({
     radius: "1600",
     location: null,
     zip: "",
   });
+  const [gotLocation, setGotLocation] = useState("none");
+  const [loader, setLoader] = useState(false)
   const [data, setData] = useState(null);
 
   function submitForm() {
       const timer = ms => new Promise(res => setTimeout(res, ms))
 
       async function load () {
+        setLoader(prevState => true);
         while (gotLocation === "pending") {
             if (formState.location) {
-                gotLocation = "active"
+                setGotLocation("active")
             }
             await timer(1000)
          }
@@ -29,6 +31,7 @@ function App() {
       .then(() => {
         let payload = formState;
         axios.post("https://whosup-backend.herokuapp.com/", payload).then((res) => {
+          setLoader(preVstate => false)
           setData(res.data);
         });
       })
@@ -47,7 +50,7 @@ function App() {
   function getLocation() {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(saveCoords);
-      gotLocation = "pending"
+      setGotLocation("pending");
     } else {
       alert("location services not supported please manually fill out field.");
     }
@@ -57,7 +60,6 @@ function App() {
         latitude: position.coords.latitude,
         longitude: position.coords.longitude,
       };
-      console.log(newState)
       setFormState(newState);
     }
   }
@@ -73,6 +75,7 @@ function App() {
             <div className="inner-loc">
               <div
                 className="button_slide slide_down small-btn"
+                style={{borderColor: gotLocation !== "none" ? "#659157" : "#ef4136"}}
                 onClick={getLocation}
               >
                 Get Location
@@ -102,6 +105,7 @@ function App() {
         </div>
       </div>
       <div className="content">
+        {loader ? <div className="loadingDiv"><div className="loadingAnim"></div></div> : null}
         {data
           ? data.map((item) => <Restaurant key={item.name} place={item} />)
           : null}
